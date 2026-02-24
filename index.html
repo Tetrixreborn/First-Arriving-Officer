@@ -96,6 +96,9 @@
       </div>
       <div class="row">
         <textarea id="beatReveal" rows="2" placeholder="Reveal (your answer / inject)"></textarea>
+        <div class="row">
+  <input id="beatImage" type="file" accept="image/*" />
+</div>
       </div>
       <div class="row">
         <button id="btnAddBeat">Add beat</button>
@@ -117,6 +120,9 @@
     <div class="pill" id="presentMeta"></div>
     <h2 id="presentTitle"></h2>
     <div class="prompt" id="presentPrompt"></div>
+    <div id="presentImageWrap" style="margin-top:12px; display:none;">
+      <img id="presentImage" style="max-width:100%; border-radius:12px; border:1px solid #333;" />
+    </div>
     <div class="reveal" id="presentReveal"></div>
     <div class="controls">
       <button id="pPrev">Prev</button>
@@ -303,6 +309,10 @@
       `;
       beatsList.appendChild(li);
     });
+    <div id="presentImageWrap" style="margin-top:12px; display:none;">
+      <img id="presentImage" style="max-width:100%; border-radius:12px; border:1px solid #333;" />
+    </div>
+    
 
     beatsList.querySelectorAll("button").forEach(btn => {
       btn.addEventListener("click", () => {
@@ -466,10 +476,12 @@
     const t = document.getElementById("beatTitle").value.trim();
     const p = document.getElementById("beatPrompt").value.trim();
     const r = document.getElementById("beatReveal").value.trim();
-    current.beats.push({ title: t, prompt: p, reveal: r });
+    current.beats.push({ title: t, prompt: p, reveal: r, image: beatImageDataUrl });
     document.getElementById("beatTitle").value = "";
     document.getElementById("beatPrompt").value = "";
     document.getElementById("beatReveal").value = "";
+    beatImageDataUrl = null;
+    document.getElementById("beatImage").value = "";
     renderBeats();
   });
   document.getElementById("btnClearBeatForm").addEventListener("click", () => {
@@ -501,6 +513,15 @@
     presentTitle.textContent = b.title || `Beat ${pIndex+1}`;
     presentPrompt.textContent = b.prompt || "";
     presentReveal.textContent = b.reveal || "";
+    const wrap = document.getElementById("presentImageWrap");
+const img = document.getElementById("presentImage");
+
+if (b.image) {
+  img.src = b.image;
+  wrap.style.display = "block";
+} else {
+  wrap.style.display = "none";
+}
     presentReveal.style.display = (pRevealOn && b.reveal) ? "block" : "none";
   }
 

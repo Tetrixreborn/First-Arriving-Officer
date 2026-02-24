@@ -39,6 +39,7 @@
     .pill { background:#222; padding: 6px 10px; border-radius: 999px; font-size: 12px; display:inline-block; }
   </style>
 </head>
+
 <body>
 <div class="wrap">
   <div class="panel">
@@ -88,22 +89,28 @@
 
     <div class="card">
       <div class="small"><b>Beats</b> (slide progression)</div>
+
       <div class="row">
         <input id="beatTitle" placeholder="Beat title (e.g., Dispatch / Arrival / Charlie side)" />
       </div>
+
       <div class="row">
         <textarea id="beatPrompt" rows="3" placeholder="Prompt (what you ask the crew)"></textarea>
       </div>
+
       <div class="row">
         <textarea id="beatReveal" rows="2" placeholder="Reveal (your answer / inject)"></textarea>
-        <div class="row">
-  <input id="beatImage" type="file" accept="image/*" />
-</div>
       </div>
+
+      <div class="row">
+        <input id="beatImage" type="file" accept="image/*" />
+      </div>
+
       <div class="row">
         <button id="btnAddBeat">Add beat</button>
         <button id="btnClearBeatForm">Clear</button>
       </div>
+
       <ol class="beats" id="beatsList"></ol>
 
       <div class="row">
@@ -120,10 +127,13 @@
     <div class="pill" id="presentMeta"></div>
     <h2 id="presentTitle"></h2>
     <div class="prompt" id="presentPrompt"></div>
+
     <div id="presentImageWrap" style="margin-top:12px; display:none;">
       <img id="presentImage" style="max-width:100%; border-radius:12px; border:1px solid #333;" />
     </div>
+
     <div class="reveal" id="presentReveal"></div>
+
     <div class="controls">
       <button id="pPrev">Prev</button>
       <button id="pNext">Next</button>
@@ -176,7 +186,7 @@
     return L.icon({
       iconUrl: url,
       iconSize: [w, h],
-      iconAnchor: [w / 2, h],   // tip sits on the point
+      iconAnchor: [w / 2, h],
       popupAnchor: [0, -h]
     });
   }
@@ -208,19 +218,17 @@
     drawnItems.addLayer(layer);
   });
 
-  map.on(L.Draw.Event.EDITED, () => { /* edits auto-saved when you hit Save */ });
   map.on(L.Draw.Event.DELETED, () => { selectedLayer = null; });
 
   function selectLayer(layer) {
     selectedLayer = layer;
-    // simple visual hint: open a popup if marker
     if (layer instanceof L.Marker) {
       const lbl = layer.options._fdLabel || "Unlabeled";
       layer.bindPopup(`Selected: ${lbl}`).openPopup();
     }
   }
 
-    function setSelectedLabel(label) {
+  function setSelectedLabel(label) {
     if (!selectedLayer || !(selectedLayer instanceof L.Marker)) return alert("Select a marker first.");
     selectedLayer.options._fdLabel = label;
 
@@ -238,6 +246,7 @@
   function featuresToGeoJSON() {
     return drawnItems.toGeoJSON();
   }
+
   function geoJSONToFeatures(geojson) {
     drawnItems.clearLayers();
     selectedLayer = null;
@@ -261,6 +270,7 @@
       }
     }).eachLayer(l => drawnItems.addLayer(l));
   }
+
   // ---------- Scenario state ----------
   let current = {
     id: uuid(),
@@ -285,6 +295,7 @@
     opt0.value = "";
     opt0.textContent = "Select saved scenario…";
     scenarioSelect.appendChild(opt0);
+
     all.forEach(s => {
       const opt = document.createElement("option");
       opt.value = s.id;
@@ -293,12 +304,17 @@
     });
   }
 
+  function escapeHtml(str) {
+    return (str ?? "").replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+  }
+
   function renderBeats() {
     beatsList.innerHTML = "";
     current.beats.forEach((b, idx) => {
       const li = document.createElement("li");
+      const hasImg = b.image ? " • 📷" : "";
       li.innerHTML = `
-        <div><b>${idx+1}. ${escapeHtml(b.title || "Untitled")}</b></div>
+        <div><b>${idx+1}. ${escapeHtml(b.title || "Untitled")}${hasImg}</b></div>
         <div class="small">${escapeHtml(b.prompt || "")}</div>
         <div class="row">
           <button data-act="up" data-i="${idx}">Up</button>
@@ -309,15 +325,12 @@
       `;
       beatsList.appendChild(li);
     });
-    <div id="presentImageWrap" style="margin-top:12px; display:none;">
-      <img id="presentImage" style="max-width:100%; border-radius:12px; border:1px solid #333;" />
-    </div>
-    
 
     beatsList.querySelectorAll("button").forEach(btn => {
       btn.addEventListener("click", () => {
         const i = Number(btn.dataset.i);
         const act = btn.dataset.act;
+
         if (act === "del") current.beats.splice(i, 1);
         if (act === "up" && i > 0) [current.beats[i-1], current.beats[i]] = [current.beats[i], current.beats[i-1]];
         if (act === "down" && i < current.beats.length-1) [current.beats[i+1], current.beats[i]] = [current.beats[i], current.beats[i+1]];
@@ -325,15 +338,12 @@
           document.getElementById("beatTitle").value = current.beats[i].title || "";
           document.getElementById("beatPrompt").value = current.beats[i].prompt || "";
           document.getElementById("beatReveal").value = current.beats[i].reveal || "";
-          current.beats.splice(i, 1); // remove, re-add on save
+          // NOTE: for a "minimal patch", we don't re-load the old image into the file input (browser blocks that).
+          current.beats.splice(i, 1); // remove; re-add after you edit and click Add Beat
         }
         renderBeats();
       });
     });
-  }
-
-  function escapeHtml(str) {
-    return (str ?? "").replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
   }
 
   function syncFromUI() {
@@ -341,18 +351,10 @@
     current.address = addressInput.value.trim();
     current.center = map.getCenter();
     current.zoom = map.getZoom();
-    // attach label properties into geojson
-    const gj = featuresToGeoJSON();
-    // ensure marker labels persist
-    gj.features.forEach(f => {
-      if (!f.properties) f.properties = {};
-      if (f.geometry?.type === "Point") {
-        // leaflet stores marker options on layer, not in geojson by default; we set it in properties through pointToLayer when loading
-        // Here we do nothing special because our labeled markers are already encoded in properties during save below.
-      }
-    });
 
-    // We need to capture labels: walk layers and map by coordinates
+    const gj = featuresToGeoJSON();
+
+    // capture marker labels
     const labeled = [];
     drawnItems.eachLayer(layer => {
       if (layer instanceof L.Marker) {
@@ -361,8 +363,9 @@
       }
     });
 
-    // inject labels into nearest point features
+    // inject labels into geojson point features by exact coord match
     gj.features.forEach(f => {
+      if (!f.properties) f.properties = {};
       if (f.geometry?.type === "Point") {
         const [lng, lat] = f.geometry.coordinates;
         const match = labeled.find(x => Math.abs(x.lat - lat) < 1e-7 && Math.abs(x.lng - lng) < 1e-7);
@@ -399,7 +402,7 @@
       const hit = await geocodeAddress(q);
       if (!hit) return alert("No results.");
       map.setView([hit.lat, hit.lng], 18);
-    } catch (e) {
+    } catch {
       alert("Geocoding error. Try again.");
     }
   });
@@ -427,8 +430,7 @@
   document.getElementById("btnLoad").addEventListener("click", () => {
     const id = scenarioSelect.value;
     if (!id) return;
-    const all = loadAll();
-    const s = all.find(x => x.id === id);
+    const s = loadAll().find(x => x.id === id);
     if (!s) return alert("Not found.");
     loadIntoUI(s);
   });
@@ -437,8 +439,7 @@
     const id = scenarioSelect.value;
     if (!id) return;
     if (!confirm("Delete this saved scenario?")) return;
-    const all = loadAll().filter(x => x.id !== id);
-    saveAll(all);
+    saveAll(loadAll().filter(x => x.id !== id));
     refreshScenarioSelect();
   });
 
@@ -471,23 +472,41 @@
   document.getElementById("btnLabelEntry").addEventListener("click", () => setSelectedLabel("Entry"));
   document.getElementById("btnClearLabels").addEventListener("click", () => clearSelectedLabel());
 
+  // ---------- Beat image upload (minimal) ----------
+  let beatImageDataUrl = null;
+
+  document.getElementById("beatImage").addEventListener("change", (e) => {
+    const file = e.target.files?.[0];
+    if (!file) { beatImageDataUrl = null; return; }
+
+    const reader = new FileReader();
+    reader.onload = () => { beatImageDataUrl = reader.result; };
+    reader.readAsDataURL(file);
+  });
+
   // ---------- Beats ----------
   document.getElementById("btnAddBeat").addEventListener("click", () => {
     const t = document.getElementById("beatTitle").value.trim();
     const p = document.getElementById("beatPrompt").value.trim();
     const r = document.getElementById("beatReveal").value.trim();
+
     current.beats.push({ title: t, prompt: p, reveal: r, image: beatImageDataUrl });
+
     document.getElementById("beatTitle").value = "";
     document.getElementById("beatPrompt").value = "";
     document.getElementById("beatReveal").value = "";
     beatImageDataUrl = null;
     document.getElementById("beatImage").value = "";
+
     renderBeats();
   });
+
   document.getElementById("btnClearBeatForm").addEventListener("click", () => {
     document.getElementById("beatTitle").value = "";
     document.getElementById("beatPrompt").value = "";
     document.getElementById("beatReveal").value = "";
+    beatImageDataUrl = null;
+    document.getElementById("beatImage").value = "";
   });
 
   // ---------- Presentation ----------
@@ -496,6 +515,9 @@
   const presentTitle = document.getElementById("presentTitle");
   const presentPrompt = document.getElementById("presentPrompt");
   const presentReveal = document.getElementById("presentReveal");
+  const presentImageWrap = document.getElementById("presentImageWrap");
+  const presentImage = document.getElementById("presentImage");
+
   let pIndex = 0;
   let pRevealOn = false;
 
@@ -506,35 +528,54 @@
       presentPrompt.textContent = "Add beats in the editor first.";
       presentReveal.style.display = "none";
       presentMeta.textContent = "0 / 0";
+      presentImageWrap.style.display = "none";
       return;
     }
+
     const b = beats[pIndex];
     presentMeta.textContent = `${pIndex+1} / ${beats.length} • ${current.title || current.address || "Scenario"}`;
     presentTitle.textContent = b.title || `Beat ${pIndex+1}`;
     presentPrompt.textContent = b.prompt || "";
     presentReveal.textContent = b.reveal || "";
-    const wrap = document.getElementById("presentImageWrap");
-const img = document.getElementById("presentImage");
 
-if (b.image) {
-  img.src = b.image;
-  wrap.style.display = "block";
-} else {
-  wrap.style.display = "none";
-}
+    if (b.image) {
+      presentImage.src = b.image;
+      presentImageWrap.style.display = "block";
+    } else {
+      presentImageWrap.style.display = "none";
+    }
+
     presentReveal.style.display = (pRevealOn && b.reveal) ? "block" : "none";
   }
 
   document.getElementById("btnPresent").addEventListener("click", () => {
     syncFromUI();
-    pIndex = 0; pRevealOn = false;
+    pIndex = 0;
+    pRevealOn = false;
     renderPresent();
     present.style.display = "flex";
   });
-  document.getElementById("pPrev").addEventListener("click", () => { pIndex = Math.max(0, pIndex-1); pRevealOn = false; renderPresent(); });
-  document.getElementById("pNext").addEventListener("click", () => { pIndex = Math.min((current.beats?.length||1)-1, pIndex+1); pRevealOn = false; renderPresent(); });
-  document.getElementById("pToggleReveal").addEventListener("click", () => { pRevealOn = !pRevealOn; renderPresent(); });
-  document.getElementById("pClose").addEventListener("click", () => { present.style.display = "none"; });
+
+  document.getElementById("pPrev").addEventListener("click", () => {
+    pIndex = Math.max(0, pIndex - 1);
+    pRevealOn = false;
+    renderPresent();
+  });
+
+  document.getElementById("pNext").addEventListener("click", () => {
+    pIndex = Math.min((current.beats?.length || 1) - 1, pIndex + 1);
+    pRevealOn = false;
+    renderPresent();
+  });
+
+  document.getElementById("pToggleReveal").addEventListener("click", () => {
+    pRevealOn = !pRevealOn;
+    renderPresent();
+  });
+
+  document.getElementById("pClose").addEventListener("click", () => {
+    present.style.display = "none";
+  });
 
   // Init
   refreshScenarioSelect();

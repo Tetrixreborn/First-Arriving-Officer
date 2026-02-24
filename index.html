@@ -308,44 +308,49 @@
     return (str ?? "").replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
   }
 
-  function renderBeats() {
-    beatsList.innerHTML = "";
-    current.beats.forEach((b, idx) => {
-      const li = document.createElement("li");
-      const hasImg = b.image ? " • 📷" : "";
-      li.innerHTML = `
-        <div><b>${idx+1}. ${escapeHtml(b.title || "Untitled")}${hasImg}</b></div>
-        <div class="small">${escapeHtml(b.prompt || "")}</div>
-        <div class="row">
-          <button data-act="up" data-i="${idx}">Up</button>
-          <button data-act="down" data-i="${idx}">Down</button>
-          <button data-act="edit" data-i="${idx}">Edit</button>
-          <button data-act="del" data-i="${idx}">Delete</button>
-        </div>
-      `;
-      beatsList.appendChild(li);
+ function renderBeats() {
+  beatsList.innerHTML = "";
+
+  current.beats.forEach((b, idx) => {
+    const li = document.createElement("li");
+    const hasImg = b.image ? " • 📷" : "";
+
+    li.innerHTML = `
+      <div><b>${idx+1}. ${escapeHtml(b.title || "Untitled")}${hasImg}</b></div>
+      <div class="small">${escapeHtml(b.prompt || "")}</div>
+      <div class="row">
+        <button data-act="up" data-i="${idx}">Up</button>
+        <button data-act="down" data-i="${idx}">Down</button>
+        <button data-act="edit" data-i="${idx}">Edit</button>
+        <button data-act="del" data-i="${idx}">Delete</button>
+      </div>
+    `;
+
+    beatsList.appendChild(li);
+  });
+
+  beatsList.querySelectorAll("button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const i = Number(btn.dataset.i);
+      const act = btn.dataset.act;
+
+      if (act === "del") current.beats.splice(i, 1);
+      if (act === "up" && i > 0)
+        [current.beats[i-1], current.beats[i]] = [current.beats[i], current.beats[i-1]];
+      if (act === "down" && i < current.beats.length-1)
+        [current.beats[i+1], current.beats[i]] = [current.beats[i], current.beats[i+1]];
+
+      if (act === "edit") {
+        document.getElementById("beatTitle").value = current.beats[i].title || "";
+        document.getElementById("beatPrompt").value = current.beats[i].prompt || "";
+        document.getElementById("beatReveal").value = current.beats[i].reveal || "";
+        current.beats.splice(i, 1);
+      }
+
+      renderBeats();
     });
-
-    beatsList.querySelectorAll("button").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const i = Number(btn.dataset.i);
-        const act = btn.dataset.act;
-
-        if (act === "del") current.beats.splice(i, 1);
-        if (act === "up" && i > 0) [current.beats[i-1], current.beats[i]] = [current.beats[i], current.beats[i-1]];
-        if (act === "down" && i < current.beats.length-1) [current.beats[i+1], current.beats[i]] = [current.beats[i], current.beats[i+1]];
-        if (act === "edit") {
-          document.getElementById("beatTitle").value = current.beats[i].title || "";
-          document.getElementById("beatPrompt").value = current.beats[i].prompt || "";
-          document.getElementById("beatReveal").value = current.beats[i].reveal || "";
-          // NOTE: for a "minimal patch", we don't re-load the old image into the file input (browser blocks that).
-          current.beats.splice(i, 1); // remove; re-add after you edit and click Add Beat
-        }
-        renderBeats();
-      });
-    });
-  }
-
+  });
+}
   function syncFromUI() {
     current.title = scenarioTitle.value.trim();
     current.address = addressInput.value.trim();

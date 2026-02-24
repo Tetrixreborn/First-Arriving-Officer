@@ -96,9 +96,16 @@
       <div class="small">Use the toolbar on the map to add markers/lines. Then edit/move them.</div>
       <div class="hr"></div>
       <div class="row">
-        <button id="btnLabelEngine">Label selected: Engine</button>
-        <button id="btnLabelHydrant">Hydrant</button>
-      </div>
+      <button id="btnLabelEngine">Label selected: Engine</button>
+  <button id="btnLabelTruck">Truck</button>
+</div>
+<div class="row">
+  <button id="btnLabelHydrant">Hydrant</button>
+  <button id="btnLabelEntry">Entry</button>
+</div>
+<div class="row">
+  <button id="btnClearLabels">Clear label</button>
+</div>
       <div class="row">
         <button id="btnLabelEntry">Entry</button>
         <button id="btnClearLabels">Clear label</button>
@@ -229,6 +236,12 @@
         <text x="32" y="40" font-size="28" text-anchor="middle" fill="#fff" font-family="Arial" font-weight="700">A</text>
       </svg>
     `)
+    "Truck": svgDataIcon(`
+  <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+    <circle cx="32" cy="32" r="30" fill="#6a1b9a" stroke="#111" stroke-width="4"/>
+    <text x="32" y="40" font-size="28" text-anchor="middle" fill="#fff" font-family="Arial" font-weight="700">T</text>
+  </svg>
+`)
   };
 
   map.on(L.Draw.Event.CREATED, (e) => {
@@ -501,6 +514,7 @@
   document.getElementById("btnLabelHydrant").addEventListener("click", () => setSelectedLabel("Hydrant"));
   document.getElementById("btnLabelEntry").addEventListener("click", () => setSelectedLabel("Entry"));
   document.getElementById("btnClearLabels").addEventListener("click", () => clearSelectedLabel());
+  document.getElementById("btnLabelTruck").addEventListener("click", () => setSelectedLabel("Truck"));
 
   // ---------- Beat image upload (minimal) ----------
   let beatImageDataUrl = null;

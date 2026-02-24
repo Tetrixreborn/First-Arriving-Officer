@@ -78,6 +78,9 @@
         <select id="scenarioSelect"></select>
       </div>
       <div class="row">
+        <button id="btnClearMap">Clear map</button>
+      </div>
+      <div class="row">
         <button id="btnLoad">Load</button>
         <button id="btnDelete">Delete</button>
       </div>
@@ -437,6 +440,12 @@
     drawnItems.clearLayers();
     renderBeats();
   });
+  document.getElementById("btnClearMap").addEventListener("click", () => {
+  if (!confirm("Clear all markers and lines on the map?")) return;
+  drawnItems.clearLayers();
+  selectedLayer = null;
+});
+  
 
   document.getElementById("btnSave").addEventListener("click", () => {
     syncFromUI();
